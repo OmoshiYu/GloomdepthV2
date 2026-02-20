@@ -1,0 +1,5 @@
+{
+  "name": "Глубины Мрака",
+  "description": "A procedural 2D Roguelike dungeon crawler featuring distinct generation algorithms, real-time combat, and permadeath.",
+  "requestFramePermissions": []
+}
