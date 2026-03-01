@@ -64,9 +64,17 @@ interface InventoryBarProps {
 }
 
 export const InventoryBar: React.FC<InventoryBarProps> = ({ inventory, sprites, onUseItem, onEquipItem, t }) => {
+    const [hoveredItem, setHoveredItem] = React.useState<Item | null>(null);
+
+    React.useEffect(() => {
+        if (hoveredItem && !inventory.some(i => i.id === hoveredItem.id)) {
+            setHoveredItem(null);
+        }
+    }, [inventory, hoveredItem]);
+
     return (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 pointer-events-auto z-30 max-w-[90vw]">
-            <div className="flex gap-2 overflow-x-auto scrollbar-hide p-1">
+        <div className="absolute top-24 md:top-4 left-1/2 -translate-x-1/2 pointer-events-auto z-30 max-w-[95vw] md:max-w-[50vw] flex flex-col items-center">
+            <div className="flex gap-1 md:gap-2 overflow-x-auto scrollbar-hide p-1 w-full justify-center">
                 {inventory.map((item, idx) => {
                     let sprite = sprites?.potion;
                     if (item.type === ItemType.POWERUP_SPEED) sprite = sprites?.scroll;
@@ -75,28 +83,33 @@ export const InventoryBar: React.FC<InventoryBarProps> = ({ inventory, sprites, 
 
                     return (
                     <div key={idx} 
-                         className="w-12 h-12 bg-stone-900 border-2 flex-shrink-0 flex items-center justify-center relative group cursor-pointer shadow-lg transition-colors"
+                         className="w-10 h-10 md:w-12 md:h-12 bg-stone-900 border-2 flex-shrink-0 flex items-center justify-center relative cursor-pointer shadow-lg transition-colors hover:brightness-125"
                          style={{ borderColor: item.color }}
-                            onClick={() => {
-                                if(item.type === ItemType.HEALTH_POTION) onUseItem(item);
-                                else if(item.type === ItemType.WEAPON_BASIC || item.type === ItemType.ARMOR_BASIC) onEquipItem(item);
-                            }}>
+                         onMouseEnter={() => setHoveredItem(item)}
+                         onMouseLeave={() => setHoveredItem(null)}
+                         onClick={() => {
+                             if(item.type === ItemType.HEALTH_POTION) onUseItem(item);
+                             else if(item.type === ItemType.WEAPON_BASIC || item.type === ItemType.ARMOR_BASIC) onEquipItem(item);
+                         }}>
                             {sprite && (
                             <img 
                                 src={sprite.toDataURL()} 
-                                className="w-8 h-8 pixelated" 
+                                className="w-6 h-6 md:w-8 md:h-8 pixelated" 
                                 style={{imageRendering: 'pixelated'}} 
                             />
                             )}
-                            <span className="absolute bottom-0 right-1 text-[10px] font-bold text-white drop-shadow-md">
+                            <span className="absolute bottom-0 right-1 text-[8px] md:text-[10px] font-bold text-white drop-shadow-md">
                             {item.type === ItemType.HEALTH_POTION ? 'Q' : ''}
                             </span>
-                        <div className="absolute top-12 bg-stone-950 text-xs text-stone-200 p-1 border border-stone-500 whitespace-nowrap hidden group-hover:block z-20 shadow-xl">
-                            {resolveItemName(item, t)}
-                        </div>
                     </div>
                 )})}
             </div>
+            {hoveredItem && (
+                <div className="mt-1 bg-stone-950 text-xs text-stone-200 p-1.5 border border-stone-500 whitespace-nowrap z-50 shadow-xl pointer-events-none rounded-sm">
+                    {resolveItemName(hoveredItem, t)}
+                    {hoveredItem.value ? <span className={hoveredItem.type === ItemType.ARMOR_BASIC ? "text-blue-400 ml-1" : "text-amber-400 ml-1"}>+{hoveredItem.value}</span> : ''}
+                </div>
+            )}
         </div>
     );
 };
@@ -117,13 +130,27 @@ interface InventoryModalProps {
 export const InventoryModal: React.FC<InventoryModalProps> = ({ 
     inventory, equipped, playerDamage, playerDefense, sprites, onClose, onUnequip, onUseItem, onEquipItem, t 
 }) => {
+    const [hoveredItem, setHoveredItem] = React.useState<Item | null>(null);
+
+    React.useEffect(() => {
+        if (hoveredItem) {
+            const inInv = inventory.some(i => i.id === hoveredItem.id);
+            const isEquipped = equipped.weapon?.id === hoveredItem.id || equipped.armor?.id === hoveredItem.id;
+            if (!inInv && !isEquipped) {
+                setHoveredItem(null);
+            }
+        }
+    }, [inventory, equipped, hoveredItem]);
+
     return (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm z-40 animate-fade-in">
-            <div className="rpg-panel p-8 w-[600px] max-w-[90%] text-stone-200 font-medieval relative">
-                <button onClick={onClose} className="absolute top-4 right-4 text-stone-500 hover:text-red-400">
-                    <X size={24} />
-                </button>
-                <h2 className="text-4xl text-amber-600 font-medieval mb-6 border-b-2 border-stone-700 pb-2 text-center text-shadow">{t.equipment}</h2>
+        <div className="absolute inset-0 flex items-center justify-center bg-black/80 backdrop-blur-sm z-40 animate-fade-in p-2 md:p-4">
+            <div className="rpg-panel p-4 md:p-8 w-[600px] max-w-full max-h-full overflow-y-auto text-stone-200 font-medieval relative">
+                <div className="sticky top-0 right-0 w-full flex justify-end z-20 pointer-events-none">
+                    <button onClick={onClose} className="text-stone-500 hover:text-red-400 p-2 bg-stone-900/80 rounded-bl-lg pointer-events-auto backdrop-blur-sm -mr-4 -mt-4 md:-mr-8 md:-mt-8">
+                        <X size={24} />
+                    </button>
+                </div>
+                <h2 className="text-3xl md:text-4xl text-amber-600 font-medieval mb-4 md:mb-6 border-b-2 border-stone-700 pb-2 text-center text-shadow pr-8 -mt-8">{t.equipment}</h2>
                 
                 <div className="flex flex-col md:flex-row gap-8">
                     <div className="w-full md:w-1/3 flex flex-col gap-4 items-center bg-stone-950/50 p-4 rounded border border-stone-800 shadow-inner">
@@ -132,6 +159,8 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
                             <div 
                                 className={`w-16 h-16 border-2 ${equipped.weapon ? 'bg-stone-900' : 'border-stone-700 bg-stone-950'} flex items-center justify-center cursor-pointer hover:brightness-125 shadow-lg`}
                                 style={{ borderColor: equipped.weapon ? equipped.weapon.color : '#44403c' }}
+                                onMouseEnter={() => equipped.weapon && setHoveredItem(equipped.weapon)}
+                                onMouseLeave={() => setHoveredItem(null)}
                                 onClick={() => onUnequip('weapon')}
                             >
                                 {equipped.weapon ? (
@@ -149,6 +178,8 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
                             <div 
                                 className={`w-16 h-16 border-2 ${equipped.armor ? 'bg-stone-900' : 'border-stone-700 bg-stone-950'} flex items-center justify-center cursor-pointer hover:brightness-125 shadow-lg`}
                                 style={{ borderColor: equipped.armor ? equipped.armor.color : '#44403c' }}
+                                onMouseEnter={() => equipped.armor && setHoveredItem(equipped.armor)}
+                                onMouseLeave={() => setHoveredItem(null)}
                                 onClick={() => onUnequip('armor')}
                             >
                                 {equipped.armor ? (
@@ -173,9 +204,9 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
                         </div>
                     </div>
 
-                    <div className="w-full md:w-2/3">
+                    <div className="w-full md:w-2/3 flex flex-col">
                         <span className="text-stone-500 text-lg mb-2 block font-medieval">{t.backpack}</span>
-                        <div className="grid grid-cols-5 gap-2 max-h-[300px] overflow-y-auto pr-2 scrollbar-hide">
+                        <div className="grid grid-cols-5 gap-2 max-h-[250px] overflow-y-auto pr-2 scrollbar-hide mb-4">
                             {inventory.map((item, idx) => {
                                 let sprite = sprites?.potion;
                                 if (item.type === ItemType.POWERUP_SPEED) sprite = sprites?.scroll;
@@ -185,19 +216,16 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
                                 return (
                                     <div 
                                         key={idx} 
-                                        className="aspect-square bg-stone-900 border-2 cursor-pointer flex items-center justify-center relative group shadow-md hover:brightness-110"
+                                        className="aspect-square bg-stone-900 border-2 cursor-pointer flex items-center justify-center relative shadow-md hover:brightness-125"
                                         style={{ borderColor: item.color }}
+                                        onMouseEnter={() => setHoveredItem(item)}
+                                        onMouseLeave={() => setHoveredItem(null)}
                                         onClick={() => {
                                             if (item.type === ItemType.HEALTH_POTION) onUseItem(item);
                                             else if (item.type === ItemType.WEAPON_BASIC || item.type === ItemType.ARMOR_BASIC) onEquipItem(item);
                                         }}
                                     >
                                         {sprite && <img src={sprite.toDataURL()} className="w-8 h-8 pixelated" />}
-                                        
-                                        <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-stone-950 text-xs text-stone-200 p-1 border border-stone-600 whitespace-nowrap hidden group-hover:block z-50 pointer-events-none shadow-xl">
-                                            {resolveItemName(item, t)}
-                                            {item.value ? <span className={item.type === ItemType.ARMOR_BASIC ? "text-blue-400 ml-1" : "text-amber-400 ml-1"}>+{item.value}</span> : ''}
-                                        </div>
                                     </div>
                                 );
                             })}
@@ -205,9 +233,23 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
                                 <div key={`e-${i}`} className="aspect-square bg-stone-950/30 border border-stone-800" />
                             ))}
                         </div>
-                        <p className="mt-4 text-sm text-stone-500 whitespace-pre-line text-center italic">
-                            {t.clickEquip} <br/> {t.pressTab}
-                        </p>
+                        
+                        <div className="h-16 border-t border-stone-800 pt-3 flex items-center justify-center text-center">
+                            {hoveredItem ? (
+                                <div>
+                                    <div className="text-stone-200 text-lg">{resolveItemName(hoveredItem, t)}</div>
+                                    {hoveredItem.value && (
+                                        <div className={hoveredItem.type === ItemType.ARMOR_BASIC ? "text-blue-400 text-sm font-bold" : "text-amber-400 text-sm font-bold"}>
+                                            +{hoveredItem.value} {hoveredItem.type === ItemType.ARMOR_BASIC ? t.def : t.dmg}
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <p className="text-sm text-stone-500 whitespace-pre-line italic">
+                                    {t.clickEquip} <br/> {t.pressTab}
+                                </p>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

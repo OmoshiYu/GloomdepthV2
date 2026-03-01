@@ -25,6 +25,7 @@ import {
   PLAYER_MAX_HP,
   COLORS,
   KEYBOARD,
+  ENEMY_SIZE,
   ENEMY_STATS,
   ENEMY_DETECT_RADIUS,
   ENEMY_ATTACK_COOLDOWN,
@@ -95,7 +96,10 @@ const GloomdepthGame: React.FC = () => {
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const requestRef = useRef<number | null>(null);
-  const inputRef = useRef<InputHandler>(new InputHandler());
+  const inputRef = useRef<InputHandler | null>(null);
+  if (!inputRef.current) {
+    inputRef.current = new InputHandler();
+  }
   const spritesRef = useRef<SpriteSheet | null>(null);
   
   const joystickRef = useRef({ 
@@ -300,13 +304,19 @@ const GloomdepthGame: React.FC = () => {
     if (!joystickRef.current.active) return;
     const touch = (Array.from(e.changedTouches) as React.Touch[]).find((t) => t.identifier === joystickRef.current.id);
     if (touch) {
-      const maxDist = 40;
+      const maxDist = 60;
+      const deadzone = 10;
       const distX = touch.clientX - joystickRef.current.startX;
       const distY = touch.clientY - joystickRef.current.startY;
       const dist = Math.hypot(distX, distY);
       const visualDist = Math.min(dist, maxDist);
       const angle = Math.atan2(distY, distX);
-      const mag = Math.min(dist / maxDist, 1.0);
+      
+      let mag = 0;
+      if (dist > deadzone) {
+          mag = Math.min((dist - deadzone) / (maxDist - deadzone), 1.0);
+      }
+      
       joystickRef.current.vector = { x: Math.cos(angle) * mag, y: Math.sin(angle) * mag };
       if (joystickKnobRef.current) {
         joystickKnobRef.current.style.transform = `translate(${Math.cos(angle) * visualDist}px, ${Math.sin(angle) * visualDist}px)`;
@@ -497,17 +507,30 @@ const GloomdepthGame: React.FC = () => {
     
     if (map.rooms && genMode === GenerationMode.BSP) {
         map.rooms.forEach(room => {
-            const cx = Math.floor(room.x + room.w/2) * TILE_SIZE;
-            const cy = Math.floor(room.y + room.h/2) * TILE_SIZE;
+            const tileX = Math.floor(room.x + room.w/2);
+            const tileY = Math.floor(room.y + room.h/2);
+            const cx = tileX * TILE_SIZE + (TILE_SIZE - ENEMY_SIZE) / 2;
+            const cy = tileY * TILE_SIZE + (TILE_SIZE - ENEMY_SIZE) / 2;
+            const chestX = tileX * TILE_SIZE + (TILE_SIZE - CHEST_SIZE) / 2;
+            const chestY = tileY * TILE_SIZE + (TILE_SIZE - CHEST_SIZE) / 2;
+            
             const roomEnemies: string[] = [];
             if (room.type === 'treasure') {
-                const guard = spawnEnemy(cx + 40, cy, EnemyType.ORC, level);
-                enemies.push(guard); roomEnemies.push(guard.id);
-                spawnChest(cx - CHEST_SIZE/2, cy - CHEST_SIZE/2, roomEnemies, level);
+                // Spawn guard slightly offset but still within the room safely
+                const guardX = (tileX - 1) * TILE_SIZE + (TILE_SIZE - ENEMY_SIZE) / 2;
+                const guardY = tileY * TILE_SIZE + (TILE_SIZE - ENEMY_SIZE) / 2;
+                if (map.tiles[tileY][tileX - 1] === TileType.FLOOR) {
+                    const guard = spawnEnemy(guardX, guardY, EnemyType.ORC, level);
+                    enemies.push(guard); roomEnemies.push(guard.id);
+                } else {
+                    const guard = spawnEnemy(cx, cy, EnemyType.ORC, level);
+                    enemies.push(guard); roomEnemies.push(guard.id);
+                }
+                spawnChest(chestX, chestY, roomEnemies, level);
             } else if (room.type === 'boss') {
                 const boss = spawnEnemy(cx, cy, EnemyType.LICH, level);
                 enemies.push(boss); roomEnemies.push(boss.id);
-                spawnChest(cx - CHEST_SIZE/2, cy - CHEST_SIZE/2, roomEnemies, level);
+                spawnChest(chestX, chestY, roomEnemies, level);
             } else if (room.type === 'normal' && Math.random() < 0.3) {
                  const type = Math.random() > 0.6 ? EnemyType.GOBLIN : EnemyType.SKELETON;
                  enemies.push(spawnEnemy(cx, cy, type, level));
@@ -527,8 +550,10 @@ const GloomdepthGame: React.FC = () => {
                         const chestEnemies: string[] = [];
                         for(let k=0; k<3; k++) {
                             const angle = Math.random() * Math.PI * 2, r = 50 + Math.random() * 50;
-                            const ex = tx * TILE_SIZE + Math.cos(angle) * r, ey = ty * TILE_SIZE + Math.sin(angle) * r;
-                            if (map.tiles[Math.floor(ey/TILE_SIZE)][Math.floor(ex/TILE_SIZE)] === TileType.FLOOR) {
+                            const ex = tx * TILE_SIZE + Math.cos(angle) * r;
+                            const ey = ty * TILE_SIZE + Math.sin(angle) * r;
+                            
+                            if (!checkCollision({x: ex, y: ey}, {x: ENEMY_SIZE, y: ENEMY_SIZE}, map)) {
                                 const type = Math.random() > 0.7 ? EnemyType.ORC : EnemyType.SKELETON;
                                 const enemy = spawnEnemy(ex, ey, type, level);
                                 enemies.push(enemy); chestEnemies.push(enemy.id);
@@ -557,7 +582,10 @@ const GloomdepthGame: React.FC = () => {
             else if (level > 2 && rand > 0.80) type = EnemyType.ORC;
             else if (rand > 0.60) type = EnemyType.GOBLIN;
             if (type === EnemyType.LICH && enemies.filter(e => e.enemyType === EnemyType.LICH).length >= 3) type = EnemyType.ORC;
-            enemies.push(spawnEnemy(ex * TILE_SIZE, ey * TILE_SIZE, type, level));
+            
+            const spawnX = ex * TILE_SIZE + (TILE_SIZE - ENEMY_SIZE) / 2;
+            const spawnY = ey * TILE_SIZE + (TILE_SIZE - ENEMY_SIZE) / 2;
+            enemies.push(spawnEnemy(spawnX, spawnY, type, level));
         }
       }
     }
@@ -946,7 +974,7 @@ const GloomdepthGame: React.FC = () => {
                   for(let i=0; i<3; i++) {
                        const angle = Math.random() * Math.PI * 2;
                        const sx = enemy.pos.x + Math.cos(angle) * 40, sy = enemy.pos.y + Math.sin(angle) * 40;
-                       if (!checkCollision({x: sx, y: sy}, {x:24, y:24}, world.map!)) {
+                       if (!checkCollision({x: sx, y: sy}, {x: ENEMY_SIZE, y: ENEMY_SIZE}, world.map!)) {
                            const minion = spawnEnemy(sx, sy, EnemyType.SKELETON, floor);
                            minion.state = EnemyState.CHASE; 
                            world.enemies.push(minion);
@@ -1097,15 +1125,21 @@ const GloomdepthGame: React.FC = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === KEYBOARD.ESCAPE) {
+      const key = e.key.toLowerCase();
+      const RU_TO_CODE: Record<string, string> = {
+        'ц': 'KeyW', 'ф': 'KeyA', 'ы': 'KeyS', 'в': 'KeyD', 'у': 'KeyE', 'й': 'KeyQ',
+      };
+      const code = RU_TO_CODE[key] || e.code || '';
+
+      if (code === KEYBOARD.ESCAPE) {
         if (showInventory) setShowInventory(false);
         else if (gameState === GameState.PLAYING) setGameState(GameState.PAUSED);
         else if (gameState === GameState.PAUSED) setGameState(GameState.PLAYING);
       }
       if (gameState === GameState.PLAYING) {
-          if (e.key.toLowerCase() === KEYBOARD.E || e.key.toLowerCase() === KEYBOARD.Q) usePotion();
-          if (e.key === KEYBOARD.TAB) { e.preventDefault(); setShowInventory(prev => !prev); }
-      } else if (showInventory && e.key === KEYBOARD.TAB) { e.preventDefault(); setShowInventory(false); }
+          if (code === KEYBOARD.E || code === KEYBOARD.Q) usePotion();
+          if (code === KEYBOARD.TAB) { e.preventDefault(); setShowInventory(prev => !prev); }
+      } else if (showInventory && code === KEYBOARD.TAB) { e.preventDefault(); setShowInventory(false); }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);

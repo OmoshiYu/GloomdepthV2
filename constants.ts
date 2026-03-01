@@ -97,18 +97,18 @@ export const COLORS = {
 };
 
 export const KEYBOARD = {
-  W: 'w',
-  A: 'a',
-  S: 's',
-  D: 'd',
-  E: 'e',
-  Q: 'q',
+  W: 'KeyW',
+  A: 'KeyA',
+  S: 'KeyS',
+  D: 'KeyD',
+  E: 'KeyE',
+  Q: 'KeyQ',
   TAB: 'Tab',
   ARROW_UP: 'ArrowUp',
   ARROW_DOWN: 'ArrowDown',
   ARROW_LEFT: 'ArrowLeft',
   ARROW_RIGHT: 'ArrowRight',
-  SPACE: ' ',
+  SPACE: 'Space',
   ESCAPE: 'Escape',
 };
 

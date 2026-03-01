@@ -1,6 +1,11 @@
 
 import { KEYBOARD } from '../constants';
 
+const RU_TO_CODE: Record<string, string> = {
+  'ц': 'KeyW', 'ф': 'KeyA', 'ы': 'KeyS', 'в': 'KeyD', 'у': 'KeyE', 'й': 'KeyQ',
+  'Ц': 'KeyW', 'Ф': 'KeyA', 'Ы': 'KeyS', 'В': 'KeyD', 'У': 'KeyE', 'Й': 'KeyQ',
+};
+
 export class InputHandler {
   keys: Set<string>;
 
@@ -11,15 +16,34 @@ export class InputHandler {
   }
 
   onKeyDown = (e: KeyboardEvent) => {
-    this.keys.add(e.key);
+    const key = e.key.toLowerCase();
+    this.keys.add(key);
+    if (RU_TO_CODE[key]) {
+      this.keys.add(RU_TO_CODE[key]);
+    }
+    if (e.code) {
+      this.keys.add(e.code);
+    }
   };
 
   onKeyUp = (e: KeyboardEvent) => {
-    this.keys.delete(e.key);
+    const key = e.key.toLowerCase();
+    this.keys.delete(key);
+    if (RU_TO_CODE[key]) {
+      this.keys.delete(RU_TO_CODE[key]);
+    }
+    if (e.code) {
+      this.keys.delete(e.code);
+    }
   };
 
   isDown(key: string): boolean {
-    return this.keys.has(key);
+    if (this.keys.has(key.toLowerCase()) || this.keys.has(key)) return true;
+    if (key.startsWith('Key')) {
+      const letter = key.charAt(3).toLowerCase();
+      if (this.keys.has(letter)) return true;
+    }
+    return false;
   }
 
   getMovementVector(): { x: number, y: number } {
