@@ -6,7 +6,7 @@ export const MAP_WIDTH = 60;
 export const MAP_HEIGHT = 60;
 
 export const PLAYER_SIZE = 32;
-export const PLAYER_SPEED = 400; 
+export const PLAYER_SPEED = 250; 
 export const PLAYER_MAX_HP = 100;
 export const PLAYER_ATTACK_COOLDOWN = 0.3;
 export const PLAYER_ATTACK_RANGE = 80;
@@ -23,10 +23,10 @@ export const KNOCKBACK_FORCE_ENEMY_ATK = 400;
 export const KNOCKBACK_FRICTION = 8.0;         
 
 export const ENEMY_STATS: Record<EnemyType, { hp: number, damage: number, speed: number, color: string, score: number, size: number }> = {
-  [EnemyType.SKELETON]: { hp: 50, damage: 10, speed: 200, color: '#ef4444', score: 50, size: 32 },
-  [EnemyType.GOBLIN]:   { hp: 30, damage: 5, speed: 300, color: '#fbbf24', score: 75, size: 32 },
-  [EnemyType.ORC]:      { hp: 100, damage: 20, speed: 140, color: '#166534', score: 150, size: 32 },
-  [EnemyType.LICH]:     { hp: 250, damage: 15, speed: 100, color: '#9333ea', score: 500, size: 32 },
+  [EnemyType.SKELETON]: { hp: 50, damage: 10, speed: 130, color: '#ef4444', score: 50, size: 32 },
+  [EnemyType.GOBLIN]:   { hp: 30, damage: 5, speed: 200, color: '#fbbf24', score: 75, size: 32 },
+  [EnemyType.ORC]:      { hp: 100, damage: 20, speed: 90, color: '#166534', score: 150, size: 32 },
+  [EnemyType.LICH]:     { hp: 250, damage: 15, speed: 70, color: '#9333ea', score: 500, size: 32 },
 };
 
 export const BIOMES: Record<string, BiomeTheme> = {

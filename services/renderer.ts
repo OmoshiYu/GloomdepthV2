@@ -36,12 +36,12 @@ export const renderWorld = ({ ctx, canvas, world, sprites, gameState, equipped }
         
         world.menuScroll += 0.5;
         ctx.save();
-        ctx.fillStyle = '#1c1917'; 
+        ctx.fillStyle = '#292524'; 
         
         const gridSize = 40;
         const timeOffset = world.menuScroll;
         
-        ctx.globalAlpha = 0.2;
+        ctx.globalAlpha = 0.4;
         for (let y = 0; y < canvas.height + gridSize; y+= gridSize) {
             for (let x = 0; x < canvas.width + gridSize; x+= gridSize) {
                 const drawX = (x + timeOffset * 0.5) % (canvas.width + gridSize) - gridSize;
@@ -107,7 +107,7 @@ export const renderWorld = ({ ctx, canvas, world, sprites, gameState, equipped }
     const drawShadow = (x: number, y: number, w: number) => {
         ctx.fillStyle = 'rgba(0,0,0,0.4)';
         ctx.beginPath();
-        ctx.ellipse(x + w/2, y + w, w/2, 4, 0, 0, Math.PI * 2);
+        ctx.ellipse(Math.floor(x + w/2), Math.floor(y + w), w/2, 4, 0, 0, Math.PI * 2);
         ctx.fill();
     };
 
@@ -123,7 +123,7 @@ export const renderWorld = ({ ctx, canvas, world, sprites, gameState, equipped }
         ctx.globalAlpha = opacity;
         
         drawShadow(chest.pos.x, chest.pos.y, CHEST_SIZE);
-        ctx.drawImage(chest.isOpened ? sprites.chestOpen : sprites.chestClosed, chest.pos.x, chest.pos.y, CHEST_SIZE, CHEST_SIZE);
+        ctx.drawImage(chest.isOpened ? sprites.chestOpen : sprites.chestClosed, Math.floor(chest.pos.x), Math.floor(chest.pos.y), CHEST_SIZE, CHEST_SIZE);
         
         ctx.restore();
 
@@ -134,8 +134,8 @@ export const renderWorld = ({ ctx, canvas, world, sprites, gameState, equipped }
             ctx.strokeStyle = '#dc2626';
             ctx.lineWidth = 4;
             ctx.lineCap = 'round';
-            const cx = chest.pos.x + CHEST_SIZE / 2;
-            const cy = chest.pos.y - 10;
+            const cx = Math.floor(chest.pos.x + CHEST_SIZE / 2);
+            const cy = Math.floor(chest.pos.y - 10);
             const size = 8;
             
             // Draw X
@@ -196,7 +196,7 @@ export const renderWorld = ({ ctx, canvas, world, sprites, gameState, equipped }
         if (item.type === ItemType.POWERUP_SPEED) sprite = sprites.scroll;
         const bob = Math.sin(performance.now() / 200) * 2;
         drawShadow(item.pos.x, item.pos.y, ITEM_SIZE);
-        ctx.drawImage(sprite, item.pos.x, item.pos.y + bob, ITEM_SIZE, ITEM_SIZE);
+        ctx.drawImage(sprite, Math.floor(item.pos.x), Math.floor(item.pos.y + bob), ITEM_SIZE, ITEM_SIZE);
     });
 
     // Draw Trail
@@ -209,8 +209,8 @@ export const renderWorld = ({ ctx, canvas, world, sprites, gameState, equipped }
             // Draw player ghost for trail (using frame 0 of Move)
             ctx.drawImage(
                 sprites.player.MOVE[0], 
-                pos.x, 
-                pos.y, 
+                Math.floor(pos.x), 
+                Math.floor(pos.y), 
                 world.player!.size.x, 
                 world.player!.size.y
             );
@@ -248,7 +248,7 @@ export const renderWorld = ({ ctx, canvas, world, sprites, gameState, equipped }
         const sprite = currentFrames[frameIndex];
         
         if (sprite) {
-            ctx.drawImage(sprite, e.pos.x, e.pos.y, e.size.x, e.size.y);
+            ctx.drawImage(sprite, Math.floor(e.pos.x), Math.floor(e.pos.y), e.size.x, e.size.y);
         }
 
         ctx.filter = 'none';
@@ -271,9 +271,9 @@ export const renderWorld = ({ ctx, canvas, world, sprites, gameState, equipped }
       if (e.hp < e.maxHp) {
           const hpPercent = e.hp / e.maxHp;
           ctx.fillStyle = '#292524';
-          ctx.fillRect(e.pos.x, e.pos.y - 8, e.size.x, 4);
+          ctx.fillRect(Math.floor(e.pos.x), Math.floor(e.pos.y - 8), e.size.x, 4);
           ctx.fillStyle = e.color;
-          ctx.fillRect(e.pos.x + 1, e.pos.y - 7, (e.size.x - 2) * hpPercent, 2);
+          ctx.fillRect(Math.floor(e.pos.x + 1), Math.floor(e.pos.y - 7), (e.size.x - 2) * hpPercent, 2);
       }
     });
 
@@ -293,8 +293,8 @@ export const renderWorld = ({ ctx, canvas, world, sprites, gameState, equipped }
 
       // Attack visual effect
       if (world.attackAnim > 0) {
-        const cx = p.pos.x + p.size.x / 2;
-        const cy = p.pos.y + p.size.y / 2;
+        const cx = Math.floor(p.pos.x + p.size.x / 2);
+        const cy = Math.floor(p.pos.y + p.size.y / 2);
         
         const maxAnim = 10;
         const progress = 1 - (world.attackAnim / maxAnim); 
@@ -332,7 +332,7 @@ export const renderWorld = ({ ctx, canvas, world, sprites, gameState, equipped }
     world.particles.forEach(p => {
         ctx.fillStyle = p.color;
         ctx.globalAlpha = p.life;
-        ctx.fillRect(p.x, p.y, p.size, p.size);
+        ctx.fillRect(Math.floor(p.x), Math.floor(p.y), p.size, p.size);
     });
     ctx.globalAlpha = 1.0;
     

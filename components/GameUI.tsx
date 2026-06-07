@@ -19,7 +19,7 @@ interface GameHUDProps {
     playerMaxHp: number;
     score: number;
     floor: number;
-    messageLog: string[];
+    messageLog: { id: number, text: string }[];
     t: any;
 }
 
@@ -45,9 +45,9 @@ export const GameHUD: React.FC<GameHUDProps> = ({ playerHp, playerMaxHp, score, 
             </div>
             
             <div className="flex flex-col gap-1 mt-2">
-                {messageLog.map((msg, i) => (
-                    <div key={i} className="text-sm text-stone-300 bg-black/70 px-2 py-1 border-l-2 border-stone-500 w-fit animate-fade-in font-medieval shadow-md">
-                        {msg}
+                {messageLog.map((msg) => (
+                    <div key={msg.id} className="text-sm text-stone-300 bg-black/70 px-2 py-1 border-l-2 border-stone-500 w-fit animate-log font-medieval shadow-md">
+                        {msg.text}
                     </div>
                 ))}
             </div>
@@ -72,10 +72,12 @@ export const InventoryBar: React.FC<InventoryBarProps> = ({ inventory, sprites, 
         }
     }, [inventory, hoveredItem]);
 
+    const quickItems = inventory.slice(0, 6);
+
     return (
-        <div className="absolute top-24 md:top-4 left-1/2 -translate-x-1/2 pointer-events-auto z-30 max-w-[95vw] md:max-w-[50vw] flex flex-col items-center">
-            <div className="flex gap-1 md:gap-2 overflow-x-auto scrollbar-hide p-1 w-full justify-center">
-                {inventory.map((item, idx) => {
+        <div className="absolute top-24 md:top-4 left-1/2 -translate-x-1/2 pointer-events-auto z-30 max-w-[95vw] w-max flex flex-col items-center">
+            <div className="flex gap-1 md:gap-2 overflow-hidden p-1 justify-center relative">
+                {quickItems.map((item, idx) => {
                     let sprite = sprites?.potion;
                     if (item.type === ItemType.POWERUP_SPEED) sprite = sprites?.scroll;
                     if (item.type === ItemType.WEAPON_BASIC) sprite = sprites?.weapon;
@@ -107,7 +109,7 @@ export const InventoryBar: React.FC<InventoryBarProps> = ({ inventory, sprites, 
             {hoveredItem && (
                 <div className="mt-1 bg-stone-950 text-xs text-stone-200 p-1.5 border border-stone-500 whitespace-nowrap z-50 shadow-xl pointer-events-none rounded-sm">
                     {resolveItemName(hoveredItem, t)}
-                    {hoveredItem.value ? <span className={hoveredItem.type === ItemType.ARMOR_BASIC ? "text-blue-400 ml-1" : "text-amber-400 ml-1"}>+{hoveredItem.value}</span> : ''}
+                    {hoveredItem.value ? <span className={hoveredItem.type === ItemType.ARMOR_BASIC ? "text-blue-400 ml-1" : hoveredItem.type === ItemType.HEALTH_POTION ? "text-red-400 ml-1" : "text-amber-400 ml-1"}>+{hoveredItem.value}</span> : ''}
                 </div>
             )}
         </div>
@@ -239,8 +241,8 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
                                 <div>
                                     <div className="text-stone-200 text-lg">{resolveItemName(hoveredItem, t)}</div>
                                     {hoveredItem.value && (
-                                        <div className={hoveredItem.type === ItemType.ARMOR_BASIC ? "text-blue-400 text-sm font-bold" : "text-amber-400 text-sm font-bold"}>
-                                            +{hoveredItem.value} {hoveredItem.type === ItemType.ARMOR_BASIC ? t.def : t.dmg}
+                                        <div className={hoveredItem.type === ItemType.ARMOR_BASIC ? "text-blue-400 text-sm font-bold" : hoveredItem.type === ItemType.HEALTH_POTION ? "text-red-400 text-sm font-bold" : "text-amber-400 text-sm font-bold"}>
+                                            +{hoveredItem.value} {hoveredItem.type === ItemType.ARMOR_BASIC ? t.def : hoveredItem.type === ItemType.HEALTH_POTION ? t.hp : t.dmg}
                                         </div>
                                     )}
                                 </div>

@@ -87,7 +87,8 @@ const GloomdepthGame: React.FC = () => {
   const [audioInitialized, setAudioInitialized] = useState(false);
   const [hasSave, setHasSave] = useState(false);
 
-  const [messageLog, setMessageLog] = useState<string[]>([]);
+  const [messageLog, setMessageLog] = useState<{id: number, text: string}[]>([]);
+  const logIdRef = useRef(0);
   
   const [equipped, setEquipped] = useState<{
     weapon: Item | null;
@@ -121,6 +122,7 @@ const GloomdepthGame: React.FC = () => {
     particles: Particle[];
     trail: Vector2[]; 
     camera: Vector2;
+    baseCamera: Vector2;
     shake: number;
     lastTime: number;
     attackAnim: number;
@@ -138,6 +140,7 @@ const GloomdepthGame: React.FC = () => {
     particles: [],
     trail: [],
     camera: { x: 0, y: 0 },
+    baseCamera: { x: 0, y: 0 },
     shake: 0,
     lastTime: 0,
     attackAnim: 0,
@@ -206,7 +209,13 @@ const GloomdepthGame: React.FC = () => {
     }
   }, [gameState, audioInitialized]);
 
-  const addLogMessage = (msg: string) => { setMessageLog(prev => [msg, ...prev].slice(0, 5)); };
+  const addLogMessage = (msg: string) => { 
+      const id = ++logIdRef.current;
+      setMessageLog(prev => [{id, text: msg}, ...prev].slice(0, 5));
+      setTimeout(() => {
+          setMessageLog(prev => prev.filter(m => m.id !== id));
+      }, 3500);
+  };
   const getBiomeForFloor = (floor: number) => floor <= 3 ? BIOMES.CASTLE : (floor <= 6 ? BIOMES.FOREST : BIOMES.LAVA);
 
   const saveProgress = (currentFloor?: number) => {
@@ -1083,8 +1092,24 @@ const GloomdepthGame: React.FC = () => {
     if (canvas) {
       const shakeX = (Math.random() - 0.5) * world.shake * 2;
       const shakeY = (Math.random() - 0.5) * world.shake * 2;
-      world.camera.x = player.pos.x + player.size.x/2 - canvas.width / 2 + shakeX;
-      world.camera.y = player.pos.y + player.size.y/2 - canvas.height / 2 + shakeY;
+      
+      const targetCameraX = player.pos.x + player.size.x/2 - canvas.width / 2;
+      const targetCameraY = player.pos.y + player.size.y/2 - canvas.height / 2;
+
+      const distSq = (world.baseCamera.x - targetCameraX) ** 2 + (world.baseCamera.y - targetCameraY) ** 2;
+      // Snap immediately if teleported or too far
+      if (distSq > canvas.width * canvas.width) {
+         world.baseCamera.x = targetCameraX;
+         world.baseCamera.y = targetCameraY;
+      } else {
+         // Smooth lag factor
+         const lerpFactor = Math.min(1, 5 * dt);
+         world.baseCamera.x += (targetCameraX - world.baseCamera.x) * lerpFactor;
+         world.baseCamera.y += (targetCameraY - world.baseCamera.y) * lerpFactor;
+      }
+
+      world.camera.x = world.baseCamera.x + shakeX;
+      world.camera.y = world.baseCamera.y + shakeY;
     }
   };
 
